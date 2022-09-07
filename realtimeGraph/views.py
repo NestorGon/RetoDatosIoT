@@ -3,7 +3,7 @@ import json
 from os import name
 import time
 
-from django.db.models.aggregates import Count
+from django.db.models.aggregates import StdDev, Count
 from realtimeMonitoring.utils import getCityCoordinates
 from typing import Dict
 import requests
@@ -515,6 +515,20 @@ La respuesta tiene esta estructura:
     "end": endTime
 }
 """
+
+def get_data_station(request, measure, user, threshold):
+    data = Data.objects.all()
+    filtered_data = data.filter(station__user__login = user, measurement__name = measure)
+    upper_data = filtered_data.filter(value__gt = threshold)
+    lower_data = filtered_data.filter(value__lte=threshold)
+    datajson = upper_data.aggregate(max_above=Max('value'), min_above=Avg('value'), std_above=StdDev('value'))
+    total = filtered_data.aggregate(Count('value'))
+    count_upper = upper_data.aggregate(Count('value'))
+    pct_upper = (0 if total==0 else (count_upper*100/total).round(2))
+    datajson['pct_upper'] = pct_upper
+    datajson.update(lower_data.aggregate(max_below=Max('value'), min_below=Avg('value'), std_below=StdDev('value')))
+
+    return JsonResponse(datajson)
 
 
 def get_map_json(request, **kwargs):
