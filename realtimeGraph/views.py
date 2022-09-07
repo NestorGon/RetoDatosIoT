@@ -490,6 +490,19 @@ La respuesta tiene esta estructura:
     "end": endTime
 }
 """
+def get_data_station(request, measure, userName):
+    data = Data.objects.all()
+    filtered_data = data.filter(station__user__login = user, measurement__name = measure)
+    upper_data = filtered_data.filter(value__gt = threshold)
+    lower_data = filtered_data.filter(value__lte=threshold)
+    datajson = upper_data.aggregate(max_above=Max('value'), min_above=Avg('value'), std_above=StdDev('value'))
+    total = filtered_data.aggregate(count=Count('value'))['count']
+    count_upper = upper_data.aggregate(count=Count('value'))['count']
+    pct_upper = (0 if total==0 else (count_upper*100)/total)
+    datajson['pct_upper'] = pct_upper
+    datajson.update(lower_data.aggregate(max_below=Max('value'), min_below=Avg('value'), std_below=StdDev('value')))
+    datajson = {k: round(v,2) for (k,v) in datajson.items()}
+    return JsonResponse(datajson)
 
 
 def get_map_json(request, **kwargs):
