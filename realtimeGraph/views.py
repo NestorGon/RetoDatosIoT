@@ -524,10 +524,10 @@ def get_data_station(request, measure, user, threshold):
     datajson = upper_data.aggregate(max_above=Max('value'), min_above=Avg('value'), std_above=StdDev('value'))
     total = filtered_data.aggregate(count=Count('value'))['count']
     count_upper = upper_data.aggregate(count=Count('value'))['count']
-    pct_upper = (0 if total==0 else (count_upper*100/total).round(2))
+    pct_upper = (0 if total==0 else (count_upper*100)/total)
     datajson['pct_upper'] = pct_upper
     datajson.update(lower_data.aggregate(max_below=Max('value'), min_below=Avg('value'), std_below=StdDev('value')))
-
+    datajson = {k: round(v,2) for (k,v) in datajson.items()}
     return JsonResponse(datajson)
 
 
