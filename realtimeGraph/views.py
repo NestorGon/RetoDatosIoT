@@ -490,7 +490,7 @@ La respuesta tiene esta estructura:
     "end": endTime
 }
 """
-def get_data_station(request, measure, userName):
+def get_data_station(request, measure, user, threshold):
     data = Data.objects.all()
     filtered_data = data.filter(station__user__login = user, measurement__name = measure)
     upper_data = filtered_data.filter(value__gt = threshold)
