@@ -503,6 +503,7 @@ def get_data_station(request, measure, user, threshold):
             else:
                 lower_data.append(j)
     
+    datajson = {}
     datajson["max_above"] = np.max(upper_data)
     datajson["min_above"]= np.min(upper_data)
     datajson["std_above"] = np.std(upper_data)
