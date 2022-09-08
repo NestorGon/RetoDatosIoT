@@ -38,6 +38,7 @@ from .models import (
 )
 from realtimeMonitoring import settings
 import dateutil.relativedelta
+import numpy as np
 from django.db.models import Avg, Max, Min, Sum
 
 
@@ -493,14 +494,24 @@ La respuesta tiene esta estructura:
 def get_data_station(request, measure, user, threshold):
     data = Data.objects.all()
     filtered_data = data.filter(station__user__login = user, measurement__name = measure)
-    upper_data = filtered_data.filter(value__gt = threshold)
-    lower_data = filtered_data.filter(value__lte=threshold)
-    datajson = upper_data.aggregate(max_above=Max('value'), min_above=Avg('value'), std_above=StdDev('value'))
-    total = filtered_data.aggregate(count=Count('value'))['count']
-    count_upper = upper_data.aggregate(count=Count('value'))['count']
-    pct_upper = (0 if total==0 else (count_upper*100)/total)
+    upper_data = []
+    lower_data = []
+    for i in filtered_data:
+        for j in i.values:
+            if j > threshold:
+                upper_data.append(j)
+            else:
+                lower_data.append(j)
+    
+    datajson["max_above"] = np.max(upper_data)
+    datajson["min_above"]= np.min(upper_data)
+    datajson["std_above"] = np.std(upper_data)
+    total = len(upper_data)+ len(lower_data)
+    pct_upper = (0 if total==0 else (len(upper_data)*100)/total)
     datajson['pct_upper'] = pct_upper
-    datajson.update(lower_data.aggregate(max_below=Max('value'), min_below=Avg('value'), std_below=StdDev('value')))
+    datajson["max_below"] = np.max(lower_data)
+    datajson["min_below"]= np.min(lower_data)
+    datajson["std_below"] = np.std(lower_data)
     datajson = {k: round(v,2) for (k,v) in datajson.items()}
     return JsonResponse(datajson)
 
